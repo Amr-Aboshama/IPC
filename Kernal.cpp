@@ -57,14 +57,14 @@ int main()
     for (int i = 0; i < PROCESSES_COUNT; ++i)
     {
         pid=fork();
-        if(pid==-1) perror("Error in forking process No."+atoi(i)+"!");
-        else if(pid==0) execl("Process","Process",atoi(upProcessMsgqID),"p"+atoi(i)+".txt",(char*)0);
+        if(pid==-1) perror("Error in forking process No."+to_string(i)+"!");
+        else if(pid==0) execl("Process","Process",to_string(upProcessMsgqID),"p"+to_string(i)+".txt",(char*)0);
     }
 
     //Forking Disk
     pid=fork();
     if(pid==-1) perror("Error in forking disk!");
-    else if(pid==0) execl("disk", "disk", atoi(upDiskMsgqID),atoi(downDiskMsgqID), (char*)0);
+    else if(pid==0) execl("disk", "disk", to_string(upDiskMsgqID),to_string(downDiskMsgqID), (char*)0);
 
     signal(SIGUSR1,SIG_IGN);
     signal(SIGUSR2,SIG_IGN);
@@ -121,7 +121,7 @@ int main()
             }
             printf ("Time %d:\tDisk Response => process PID |%d| %s\n", CLK, rcvDiskMsg.mtype, responseAsTxt.c_str());
 
-            if(isFinished(upProcessMsgqID,upDiskMsgqID,downProcessMsgqID,downDiskMsgqID))   break;
+            if(isFinished(upProcessMsgqID,upDiskMsgqID,downDiskMsgqID))   break;
         }
     }
     kill(DISK_PID,SIGKILL);

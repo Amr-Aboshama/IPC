@@ -35,7 +35,7 @@ struct msgbuff
 void Down()
 {
     struct msgbuff recvMsg;
-    int status = msgrcv(downID, &recvMsg, sizeof(msgbuff.mtext), 0, IPC_NOWAIT); 
+    int status = msgrcv(downID, &recvMsg, MAX_MSG_SIZE, 0, IPC_NOWAIT); 
 
     // I think it's better to check that it's not zero
     if (status != 0)
@@ -68,9 +68,9 @@ vector<pair<int,int>> execute(){
                 operations.erase(operations.begin()+i);
                 i--; 
             }
-            else if(operations[i].second[0] == 'A') {
-                operations[i].second.erase(0,1);
-                toAdd.PB(MP(response.size(),opearions[i].second));
+            else if(operations[i].first.second[0] == 'A') {
+                operations[i].first.second.erase(0, 1);
+                toAdd.PB(MP(response.size(),opearions[i].first.second));
                 response.PB(MP(operations[i].second,-1));
                 operations.erase(operations.begin()+i);
                 i--;
@@ -107,7 +107,7 @@ void Up(string msg, int pid)
     M.mtext = msg;
 
     // !IPC_NOWAIT will make the function waits till it sends the msg
-    int send_val = msgsnd(upID, &M, sizeof(msgbuff), !IPC_NOWAIT);
+    int send_val = msgsnd(upID, &M, MAX_MSG_SIZE, !IPC_NOWAIT);
 
     if (send_val == -1)
         perror("Error in sending msg from Disk to Kernel");
@@ -131,6 +131,18 @@ void handler1(int signum)
     Up(txt, 1);
 }
 
+int StoI(char* num)
+{
+  int ret=0;
+  int n=strlen(num);
+  for(int i=0 ; i<n ; ++i)
+  {
+    ret*=10;
+    ret+=(num[i]-'0');
+  }
+  return ret;
+}
+
 // argv[0] = Process.exe
 // argv[1] = up_queue_id
 // argv[2] = down_queue_id
@@ -140,8 +152,8 @@ int main(int argc, char *argv[])
     signal(SIGUSR2, handler2);
     signal(SIGUSR1, handler1);
 
-    upID = argv[1];
-    downID = argv[2];
+    upID = StoI(argv[1]);
+    downID = StoI(argv[2]);
     
     while (1) Down();
 
