@@ -25,21 +25,17 @@ int upID, downID;
 
 int CLK;
 
-struct msgbuf
+struct msgbuff
 {
     long mtype;
     string mtext;
 };
 
 //from kernel to Disk
-// 0==> succesful ADD
-// 1 ==> successful DEL
-// 2 ==> unable to ADD
-// 3 ==> unable to DEL
-int Down()
+void Down()
 {
-    struct msgbuf recvMsg;
-    int status = msgrcv(downID, &recvMsg, sizeof(msgbuf.mtext), 0, !IPC_NOWAIT); 
+    struct msgbuff recvMsg;
+    int status = msgrcv(downID, &recvMsg, sizeof(msgbuff.mtext), 0, IPC_NOWAIT); 
 
     // I think it's better to check that it's not zero
     if (status != 0)
@@ -48,10 +44,6 @@ int Down()
             operations.PB(MP(MP(CLK+1, recvMsg.mtext), recvMsg.mtype));
         else
             operations.PB(MP(MP(CLK+3, recvMsg.mtext), recvMsg.mtype));
-    }
-    else
-    {
-        perror("Error in recieving msg");
     }
 }
 
@@ -73,13 +65,16 @@ vector<pair<int,int>> execute(){
                     diskSlots[slotNum] = "";
                     response.PB(MP(operations[i].second,1));
                 }
+                operations.erase(operations.begin()+i);
+                i--; 
             }
             else if(operations[i].second[0] == 'A') {
                 operations[i].second.erase(0,1);
                 toAdd.PB(MP(response.size(),opearions[i].second));
                 response.PB(MP(operations[i].second,-1));
+                operations.erase(operations.begin()+i);
+                i--;
             }
-            operations.erase(operations.begin()+i);
         }
     }
     int j = 0;
@@ -107,12 +102,12 @@ void Up(string msg, int pid)
         return;
     }
 
-    struct msgbuf M;
+    struct msgbuff M;
     M.mtype = pid;
     M.mtext = msg;
 
     // !IPC_NOWAIT will make the function waits till it sends the msg
-    int send_val = msgsnd(upID, &M, sizeof(msgbuf), !IPC_NOWAIT);
+    int send_val = msgsnd(upID, &M, sizeof(msgbuff), !IPC_NOWAIT);
 
     if (send_val == -1)
         perror("Error in sending msg from Disk to Kernel");
@@ -148,7 +143,7 @@ int main(int argc, char *argv[])
     upID = argv[1];
     downID = argv[2];
     
-    while (1);
+    while (1) Down();
 
     return 0;
 }
