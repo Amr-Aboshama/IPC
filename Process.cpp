@@ -10,7 +10,7 @@ using namespace std;
 
 #define MAX_MSG_SIZE 64
 
-struct msgbuf
+struct msgbuff
 {
   long m_type;
   string msg;
@@ -37,16 +37,18 @@ int StoI(char* num)
 
 // argv[0] = Process.exe
 // argv[1] = up_queue_id
-// argv[2] = down_queue_id
-// argv[3] = text file
+// argv[2] = text file
+// argv[3] = down_queue_id
 int main(int argc ,char** argv)
 {
   signal(SIGUSR2,handler);
+  signal(SIGUSR1,SIG_IGN);
 
-  ifstream In(argv[3]);
+  ifstream In(argv[2]);
   string line;
   vector<pair<int,string>>operations;
-  int upMsgqID=StoI(argv[1]),downMsgqID=StoI(argv[2]);
+  int upMsgqID=StoI(argv[1]);
+  // int downMsgqID=StoI(argv[3]);
   int pid=getpid();
   
   
@@ -74,16 +76,21 @@ int main(int argc ,char** argv)
   {
     if(CLK==operations.back().first)
     {
-      msgbuf smessage,rmessage;
+      msgbuff smessage;
+      // msgbuff rmessage;
       smessage.m_type=pid;
       smessage.msg=operations.back().second;
       smessage.msg.resize(MAX_MSG_SIZE);
       operations.pop_back();
-      int send_response=msgsnd(upMsgqID,&smessage,64,!IPC_NOWAIT);
-      if(!send_response)
-        int rcv_response=msgrcv(downMsgqID,&rmessage,64,pid,!IPC_NOWAIT);
-      else
+      int sendResponse=msgsnd(upMsgqID,&smessage,MAX_MSG_SIZE,!IPC_NOWAIT);
+      //if(!send_response)
+        //"!IPC_NOWAIT" can cause a dead lock if it waited 3 clock cycles or more to get response from kernel
+        // time = last_time+3 at least and maybe arrival time of the first message in the process < last_time +3 so it will be in a desd lock 
+        //so we made it with "IPC_NOWAIT"
+        //int rcv_response=msgrcv(downMsgqID,&rmessage,MAX_MSG_SIZE,pid,IPC_NOWAIT);
+      if(sendResponse == -1)
         perror("Error in sending message!");
     }
   }
+  return 0;
 }
