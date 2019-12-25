@@ -35,44 +35,51 @@ struct msgbuff
 void Down()
 {
     struct msgbuff recvMsg;
-    int status = msgrcv(downID, &recvMsg, MAX_MSG_SIZE, 0, IPC_NOWAIT); 
+    int status = msgrcv(downID, &recvMsg, MAX_MSG_SIZE, 0, IPC_NOWAIT);
 
     // I think it's better to check that it's not zero
     if (status != 0)
     {
         if (recvMsg.mtext[0] == 'D')
-            operations.PB(MP(MP(CLK+1, recvMsg.mtext), recvMsg.mtype));
+            operations.PB(MP(MP(CLK + 1, recvMsg.mtext), recvMsg.mtype));
         else
-            operations.PB(MP(MP(CLK+3, recvMsg.mtext), recvMsg.mtype));
+            operations.PB(MP(MP(CLK + 3, recvMsg.mtext), recvMsg.mtype));
     }
 }
 
-vector<pair<int,int>> execute(){
-    // 0 success add 
+vector<pair<int, int>> execute()
+{
+    // 0 success add
     // 1 success delete
     // 2 failed add
     // 3 dailed delete
-    vector<pair<int,string>> toAdd;
-    vector<pair<int,int>> response;
-    for(int i = 0;i < operations.size();i++) {
-        if (operations[i].first.first == CLK) {
-            if(operations[i].first.second[0] == 'D') {
+    vector<pair<int, string>> toAdd;
+    vector<pair<int, int>> response;
+    for (int i = 0; i < operations.size(); i++)
+    {
+        if (operations[i].first.first == CLK)
+        {
+            if (operations[i].first.second[0] == 'D')
+            {
                 int slotNum = operations[i].first.second[1] - '0';
-                if(diskSlots[slotNum] == "") {
-                    response.PB(MP(operations[i].second,3));
+                if (diskSlots[slotNum] == "")
+                {
+                    response.PB(MP(operations[i].second, 3));
                 }
-                else {
+                else
+                {
                     diskSlots[slotNum] = "";
-                    response.PB(MP(operations[i].second,1));
+                    response.PB(MP(operations[i].second, 1));
                 }
-                operations.erase(operations.begin()+i);
-                i--; 
+                operations.erase(operations.begin() + i);
+                i--;
             }
-            else if(operations[i].first.second[0] == 'A') {
+            else if (operations[i].first.second[0] == 'A')
+            {
                 operations[i].first.second.erase(0, 1);
-                toAdd.PB(MP(response.size(),opearions[i].first.second));
-                response.PB(MP(operations[i].second,-1));
-                operations.erase(operations.begin()+i);
+                toAdd.PB(MP(response.size(), operations[i].first.second));
+                response.PB(MP(operations[i].second, -1));
+                operations.erase(operations.begin() + i);
                 i--;
             }
         }
@@ -80,13 +87,15 @@ vector<pair<int,int>> execute(){
     int j = 0;
     for (int i = 0; i < diskSlots.size(); i++)
     {
-        if(diskSlots[i] == "") {
-            diskSlots[i] = toAdd.second[j]; 
-            response[toAdd.first].second = 0;
+        if (diskSlots[i] == "")
+        {
+            diskSlots[i] = toAdd[j].second[j];
+            response[toAdd[j].first].second = 0;
             j++;
         }
     }
-    while(j<toAdd.size()) {
+    while (j < toAdd.size())
+    {
         response[toAdd[j].first].second = 2;
         j++;
     }
@@ -117,7 +126,8 @@ void handler2(int signum)
 {
     CLK++;
     vector<pair<int, int>> responses = execute();
-    for (auto r: responses){
+    for (auto r : responses)
+    {
         string s = "R" + r.second;
         Up(s, r.first);
     }
@@ -131,16 +141,16 @@ void handler1(int signum)
     Up(txt, 1);
 }
 
-int StoI(char* num)
+int StoI(char *num)
 {
-  int ret=0;
-  int n=strlen(num);
-  for(int i=0 ; i<n ; ++i)
-  {
-    ret*=10;
-    ret+=(num[i]-'0');
-  }
-  return ret;
+    int ret = 0;
+    int n = strlen(num);
+    for (int i = 0; i < n; ++i)
+    {
+        ret *= 10;
+        ret += (num[i] - '0');
+    }
+    return ret;
 }
 
 // argv[0] = Process.exe
@@ -154,8 +164,9 @@ int main(int argc, char *argv[])
 
     upID = StoI(argv[1]);
     downID = StoI(argv[2]);
-    
-    while (1) Down();
+
+    while (1)
+        Down();
 
     return 0;
 }
